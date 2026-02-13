@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Valentine Gift</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:#ffd6e8;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  text-align:center;
+}
+
+.screen{display:none;}
+.screen.active{display:block;}
+
+button{
+  padding:12px 26px;
+  font-size:18px;
+  border-radius:14px;
+  border:none;
+  cursor:pointer;
+  margin:10px;
+}
+
+button:disabled{
+  opacity:0.5;
+  cursor:not-allowed;
+}
+
+#yesBtn{background:#f3f3f3;}
+#noBtn{background:#d0d0d0;}
+
+canvas{
+  image-rendering:pixelated;
+  margin:20px auto;
+  display:block;
+}
+
+/* ENVELOPE */
+.envelope{
+  width:220px;
+  height:140px;
+  position:relative;
+  margin:20px auto;
+  background:#fff;
+  border:2px solid #e5a7c2;
+  border-radius:8px;
+  overflow:hidden;
+}
+
+.paper{
+  position:absolute;
+  bottom:-90px;
+  left:10px;
+  right:10px;
+  height:90px;
+  background:#fff7fb;
+  border:1px solid #e5a7c2;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:bold;
+  color:#c04a7a;
+  transition:0.6s ease;
+}
+
+.flap{
+  position:absolute;
+  inset:0;
+  background:#f2b5cf;
+  clip-path:polygon(0 0,100% 0,50% 55%);
+  transform-origin:top;
+  transition:0.6s ease;
+  z-index:2;
+}
+
+.envelope.open .flap{transform:rotateX(180deg);}
+.envelope.open .paper{bottom:20px;}
+</style>
+</head>
+
+<body>
+
+<!-- DISCLAIMER -->
+<div class="screen active" id="disclaimer">
+  <p>Disclaimer: please don’t take this gift seriously.<br>I just wanted to make something for you.</p>
+  <button onclick="go('envelope')">Next</button>
+</div>
+
+<!-- ENVELOPE -->
+<div class="screen" id="envelope">
+  <div class="envelope" id="env">
+    <div class="flap"></div>
+    <div class="paper">Happy Valentine’s Day!!</div>
+  </div>
+  <button onclick="openEnvelope()">Open</button>
+  <button id="envNext" onclick="go('message')" disabled>Next</button>
+  <button onclick="go('disclaimer')">Back</button>
+</div>
+
+<!-- MESSAGE -->
+<div class="screen" id="message">
+  <p>Because today is Valentine’s Day,<br>I made this just for you.</p>
+  <button onclick="go('envelope')">Back</button>
+  <button onclick="go('flower'); startFlowerReveal()">Next</button>
+</div>
+
+<!-- FLOWER -->
+<div class="screen" id="flower">
+  <p><b>I made this for u😔</b></p>
+  <canvas id="flowerCanvas" width="304" height="320"></canvas>
+  <button onclick="go('message')">Back</button>
+  <button onclick="go('revealCat'); startCatReveal()">Next</button>
+</div>
+
+<!-- CAT REVEAL -->
+<div class="screen" id="revealCat">
+  <p><b>You can give him a hat too</b></p>
+  <canvas id="revealCanvas" width="304" height="304"></canvas>
+  <button onclick="toggleHat()">Press</button><br>
+  <button onclick="go('flower')">Back</button>
+  <button onclick="go('question')">Next</button>
+</div>
+
+<!-- QUESTION -->
+<div class="screen" id="question">
+  <canvas id="cat" width="304" height="304"></canvas>
+  <p>Do you like this gift?</p>
+  <button id="yesBtn" onclick="yes()">Yes</button>
+  <button id="noBtn" onclick="no()">No</button>
+</div>
+
+<!-- FINAL -->
+<div class="screen" id="final">
+  <canvas id="cat2" width="304" height="304"></canvas>
+  <p id="finalText">yayyyyy</p>
+</div>
+
+<script>
+/* NAV */
+function go(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  if(id==="question") animateCat();
+}
+
+/* ENVELOPE */
+let envelopeOpened=false;
+function openEnvelope(){
+  if(envelopeOpened) return;
+  envelopeOpened=true;
+  env.classList.add("open");
+  envNext.disabled=false;
+}
+
+/* FLOWER */
+const flowerMap=[
+"@@@rrr@@@@@","@@mdmmdm@@@","@mdmdrdfm@@","rmddrddmrr@","rrmdddmmrr@",
+"rrrmmdmrf@@","@ddddmrdf@@","@dmmmrddf@@","@@ddfffmm@@","@@@ddfm@@@@",
+"@@@@etg@@@@","g@@@@e@@@@@","ttee@e@@@@@","eetg@eg@ggt","@@eete@@gte",
+"@@@@@t@gtee","@@@@tt@ee@@","@@@@@te@@@@","@@@@@e@@@@@","@@@@@e@@@@@"
+];
+const flowerColors={
+"@":null,"r":"#ffb3b3","m":"#ff4d4d","f":"#cc0000","d":"#7a0000",
+"g":"#9ccc65","t":"#6fa843","e":"#2e5e2e"
+};
+
+function startFlowerReveal(){
+  let i=1;
+  const c=flowerCanvas.getContext("2d");
+  const size=16;
+  const int=setInterval(()=>{
+    c.clearRect(0,0,304,320);
+    flowerMap.slice(0,i).forEach((row,y)=>{
+      [...row].forEach((v,x)=>{
+        if(flowerColors[v]){
+          c.fillStyle=flowerColors[v];
+          c.fillRect(x*size,y*size,size,size);
+        }
+      });
+    });
+    i++; if(i>flowerMap.length) clearInterval(int);
+  },90);
+}
+
+/* CAT + HAT */
+let hatOn=false;
+let bob=0;
+
+const catBase=[
+"####11#####11####","####121###121####","####132121231####","####134242431####",
+"##1124444444211##","###14444344441###","##1124143414211##","###14413331441###",
+"####143353341####","#####11222111####","####112242211####","####114333411####",
+"###14144344141###","##0141414141410##","#001214121412100#",
+"#000114111411000#","##0001310131000##","###00011011000###",
+"#####0000000#####"
+];
+
+const hat=[
+"#######qqq#######",
+"######qqqqq######",
+"####qqqqqqqqq###",
+"####qqqqqqqqq###"
+];
+
+const colors={
+"#":"#ffd6e8","0":"#d9d9d9","1":"#222","2":"#666",
+"3":"#eee","4":"#888","5":"#ff8fa3","q":"#ff0000"
+};
+
+function getCat(){
+  return hatOn ? [...hat, ...catBase.slice(hat.length)] : catBase;
+}
+
+function drawCat(canvas,rows,yOff=0){
+  const ctx=canvas.getContext("2d");
+  ctx.clearRect(0,0,304,304);
+  rows.forEach((r,y)=>{
+    [...r].forEach((v,x)=>{
+      ctx.fillStyle=colors[v];
+      ctx.fillRect(x*16,y*16+yOff,16,16);
+    });
+  });
+}
+
+function startCatReveal(){
+  let i=1;
+  const int=setInterval(()=>{
+    drawCat(revealCanvas,getCat().slice(0,i));
+    i++;
+    if(i>getCat().length) clearInterval(int);
+  },80);
+}
+
+function toggleHat(){
+  hatOn=!hatOn;
+  startCatReveal();
+}
+
+function animateCat(){
+  bob=Math.sin(Date.now()/300)*4;
+  drawCat(cat,getCat(),bob);
+  requestAnimationFrame(animateCat);
+}
+
+/* YES / NO */
+let noCount=0, yesScale=1, noScale=1;
+
+function yes(){
+  go("final");
+  finalText.innerText="yayyyyy";
+}
+
+function no(){
+  noCount++;
+  yesScale+=0.15;
+  noScale=Math.max(0.4,noScale-0.08);
+  yesBtn.style.transform=`scale(${yesScale})`;
+  noBtn.style.transform=`scale(${noScale})`;
+  if(noCount>=10){
+    go("final");
+    finalText.innerText="okay :(";
+  }
+}
+
+drawCat(cat2,catBase);
+</script>
+
+</body>
+</html>
